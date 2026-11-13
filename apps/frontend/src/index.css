@@ -1,0 +1,527 @@
+@import "tailwindcss";
+
+/* shadcn "new-york" style — tokens em OKLCH (Tailwind v4 default).
+ * Light em :root, dark via classe `.dark` na <html>.
+ * O ThemeProvider alterna essa classe. */
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.5045 0.2251 262.79);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.95 0.005 200);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --error: oklch(0.577 0.245 27.325);
+  --error-foreground: oklch(0.985 0 0);
+  /* `destructive` mantido como alias de `error` por compatibilidade
+   * (shadcn convention + classes já espalhadas no app). Edite só `error`
+   * pra ajustar; destructive segue automaticamente. */
+  --destructive: var(--error);
+  --destructive-foreground: var(--error-foreground);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --radius: 0.5rem;
+
+  /* Superfície da página — fundo bege bem suave atrás da toolbar/cards
+   * brancos. Cria profundidade percebida sem competir visualmente. */
+  --page: oklch(0.97 0.0164 260.65);
+
+  /* Camada intermediária — agrupadores que ficam acima da página e abaixo
+   * dos cards (colunas do kanban de leads, painéis sectorizados, etc).
+   * Hierarquia: page < surface < background/card. No light a diferença é
+   * sutil (~1pp); no dark mais visível porque o tom warm contrasta. */
+  --surface: oklch(0.98 0.009 100);
+  --surface-foreground: oklch(0.145 0 0);
+
+  /* Paleta semântica do Elora. Cada categoria tem cor de fundo + cor de
+   * texto sobre ela (-foreground). Calibradas em OKLCH; ajuste lightness
+   * pra contraste, chroma pra saturação, hue pra matiz. */
+  --tertiary: oklch(0.92 0.01 240);
+  --tertiary-foreground: oklch(0.205 0 0);
+  --info: oklch(0.55 0.20 250);
+  --info-foreground: oklch(0.985 0 0);
+  --success: oklch(0.58 0.16 145);
+  --success-foreground: oklch(0.985 0 0);
+  --warning: oklch(0.78 0.16 75);
+  --warning-foreground: oklch(0.205 0 0);
+
+  /* Variantes "soft" pra superfícies grandes em estado de alerta (bolha de
+   * mensagem em falha, banners de aviso, cards de erro). O token base
+   * (`--warning`/`--error`) é saturado demais pra cobrir um balão inteiro —
+   * usar com alpha sobre o chat-bg pattern fica visualmente sujo (textura
+   * passa por trás). Os "soft" são opacos, lightness alta, chroma baixo: um
+   * amarelo/vermelho bem claro com tom de alerta preservado. Foreground
+   * combina (texto escuro do mesmo matiz pra contraste AA). */
+  --warning-soft: oklch(0.96 0.05 75);
+  --warning-soft-foreground: oklch(0.38 0.14 75);
+  --error-soft: oklch(0.95 0.04 27);
+  --error-soft-foreground: oklch(0.42 0.19 27);
+
+  /* Acentos exclusivos do domínio CHAT — verde por associação a WhatsApp,
+   * mas calibrados no espírito do tema (não cópia de cor). Servem pra
+   * separar visualmente o que é chat (atendimento/conversa) do que é core
+   * (CRM/cadastros). Documentado em arquitetura.md §15. */
+  --chat-accent: oklch(0.55 0.14 158);
+  --chat-accent-foreground: oklch(0.985 0 0);
+  --chat-bubble: oklch(0.93 0.06 145);
+  --chat-bubble-foreground: oklch(0.20 0 0);
+  --chat-background-conversation: oklch(0.92 0.032 80);
+  --chat-background-card: oklch(0.28 0.25 180);
+  --chat-txt-card: oklch(1 0 0);
+
+  /* ─── Paleta exclusiva de stages de Journey e substages de Lead ─────
+   * Tokens próprios (não reutilizam info/primary/etc) pra dar identidade
+   * a cada estado do funil. Calibrados em OKLCH com lightness 0.55–0.75
+   * e chroma variável por hierarquia:
+   *   - Relevantes (lead, new, contact, scheduled): chroma alto (~0.20)
+   *     + L baixa-média pra puxar o olho. São os estados onde o operador
+   *     precisa agir.
+   *   - Soft com identidade (evaluation, treatment, template): L alta
+   *     (~0.70-0.75) + chroma médio-baixo. Têm cor reconhecível (salmão,
+   *     verde água, cinza) mas recuam visualmente vs os relevantes pelo
+   *     contraste de saturação/lightness.
+   *   - Alerta (sale, rescheduled): hue laranja (45–55deg) — chama
+   *     atenção sem ser "erro". Sale = oportunidade quente; rescheduled
+   *     = cliente que precisa reagendamento.
+   *   - Conclusão (result, quoted): verde — sucesso final.
+   *   - no_show: amarelo (80deg) — aviso de menor severidade.
+   * Mesmos valores em light e dark (sem override em .dark). L mid-range
+   * + chroma moderado garantem legibilidade nos dois temas, e o pattern
+   * de badge `bg-X/15 text-X` aplica alpha sobre o fundo do tema. */
+  --journey-lead: oklch(0.58 0.20 250);
+  --journey-lead-foreground: oklch(0.985 0 0);
+  --journey-evaluation: oklch(0.75 0.13 25);
+  --journey-evaluation-foreground: oklch(0.205 0 0);
+  --journey-sale: oklch(0.70 0.18 55);
+  --journey-sale-foreground: oklch(0.205 0 0);
+  --journey-treatment: oklch(0.78 0.08 185);
+  --journey-treatment-foreground: oklch(0.205 0 0);
+  --journey-result: oklch(0.60 0.16 145);
+  --journey-result-foreground: oklch(0.985 0 0);
+
+  --lead-new: oklch(0.58 0.22 245);
+  --lead-new-foreground: oklch(0.985 0 0);
+  --lead-template: oklch(0.70 0.03 240);
+  --lead-template-foreground: oklch(0.205 0 0);
+  --lead-contact: oklch(0.62 0.16 200);
+  --lead-contact-foreground: oklch(0.985 0 0);
+  --lead-scheduled: oklch(0.55 0.22 295);
+  --lead-scheduled-foreground: oklch(0.985 0 0);
+  --lead-no-show: oklch(0.75 0.13 80);
+  --lead-no-show-foreground: oklch(0.205 0 0);
+  --lead-rescheduled: oklch(0.68 0.20 45);
+  --lead-rescheduled-foreground: oklch(0.205 0 0);
+  --lead-quoted: oklch(0.62 0.14 145);
+  --lead-quoted-foreground: oklch(0.985 0 0);
+}
+
+.dark {
+  --background: oklch(0.18 0.005 60);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.6 0.2 260);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --error: oklch(0.704 0.191 22.216);
+  --error-foreground: oklch(0.985 0 0);
+  --destructive: var(--error);
+  --destructive-foreground: var(--error-foreground);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+
+  /* Dark page surface — ligeiramente mais claro que --background, com matiz
+   * warm sutil pra rimar com o bege do tema claro. A diferença pequena
+   * (~3.5pp) basta pra toolbar/cards parecerem flutuar sobre o fundo. */
+  --page: oklch(0.18 0 60);
+
+  /* Surface intermediária — fica entre page (0.18) e card (0.205) pra criar
+   * profundidade quando o agrupador hospeda cards (ex: coluna do kanban
+   * com LeadCards). 1.5pp acima do page é suficiente pra leitura sem
+   * roubar atenção dos cards. */
+  --surface: oklch(0.195 0.003 60);
+  --surface-foreground: oklch(0.985 0 0);
+
+  /* Paleta semântica — versões dark. Lightness aumentada (~+0.15) pras
+   * cores saturadas, e foregrounds invertidos quando o fundo fica claro
+   * demais pra texto branco (success/warning no dark). */
+  --tertiary: oklch(0.30 0.005 240);
+  --tertiary-foreground: oklch(0.985 0 0);
+  --info: oklch(0.7 0.18 250);
+  --info-foreground: oklch(0.205 0 0);
+  --success: oklch(0.72 0.16 145);
+  --success-foreground: oklch(0.205 0 0);
+  --warning: oklch(0.78 0.17 75);
+  --warning-foreground: oklch(0.205 0 0);
+
+  /* Soft em dark — fundo escurecido com matiz da cor + texto claro do mesmo
+   * matiz. Mesmo papel das soft no light (superfície grande de alerta opaca
+   * sobre chat-bg pattern dark sem brigar visualmente). */
+  --warning-soft: oklch(0.32 0.08 75);
+  --warning-soft-foreground: oklch(0.88 0.12 75);
+  --error-soft: oklch(0.32 0.10 27);
+  --error-soft-foreground: oklch(0.88 0.14 27);
+
+  /* Chat — dark mode. Bolha outbound vai pra verde profundo (estilo
+   * WhatsApp dark), accent fica mais claro pra continuar legível em UI. */
+  --chat-accent: oklch(0.68 0.15 158);
+  --chat-accent-foreground: oklch(0.15 0 0);
+  --chat-bubble: oklch(0.42 0.08 175);
+  --chat-bubble-foreground: oklch(0.985 0 0);
+  --chat-background-conversation: oklch(0.145 0 0);
+  --chat-background-card: oklch(0.14 0.16 195);
+  --chat-txt-card: oklch(1 0 0);
+
+}
+
+/* Escopo visual do chat. Aplicado em qualquer wrapper que envolva conteúdo
+ * de chat (ChatSidebarPanel, FloatingChatWindow) — primitivos shadcn
+ * dentro passam a renderizar na paleta verde sem trocar componente.
+ * Mantém os tokens semânticos (info/success/warning/error) intactos: só
+ * primary/accent/ring viram chat-tinted. Documentado em arquitetura.md §14. */
+.chat-scope {
+  --primary: var(--chat-accent);
+  --primary-foreground: var(--chat-accent-foreground);
+  --accent: oklch(0.95 0.04 158);
+  --accent-foreground: oklch(0.205 0 0);
+  --ring: var(--chat-accent);
+}
+
+.dark .chat-scope {
+  --primary: var(--chat-accent);
+  --primary-foreground: var(--chat-accent-foreground);
+  --accent: oklch(0.30 0.04 158);
+  --accent-foreground: oklch(0.985 0 0);
+  --ring: var(--chat-accent);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-error: var(--error);
+  --color-error-foreground: var(--error-foreground);
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-foreground: var(--tertiary-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-soft-foreground: var(--warning-soft-foreground);
+  --color-error-soft: var(--error-soft);
+  --color-error-soft-foreground: var(--error-soft-foreground);
+
+  --color-chat-accent: var(--chat-accent);
+  --color-chat-accent-foreground: var(--chat-accent-foreground);
+  --color-chat-bubble: var(--chat-bubble);
+  --color-chat-bubble-foreground: var(--chat-bubble-foreground);
+  --color-chat-background-conversation: var(--chat-background-conversation);
+  --color-chat-background-card: var(--chat-background-card);
+  --color-chat-txt-card: var(--chat-txt-card);
+
+  --color-journey-lead: var(--journey-lead);
+  --color-journey-lead-foreground: var(--journey-lead-foreground);
+  --color-journey-evaluation: var(--journey-evaluation);
+  --color-journey-evaluation-foreground: var(--journey-evaluation-foreground);
+  --color-journey-sale: var(--journey-sale);
+  --color-journey-sale-foreground: var(--journey-sale-foreground);
+  --color-journey-treatment: var(--journey-treatment);
+  --color-journey-treatment-foreground: var(--journey-treatment-foreground);
+  --color-journey-result: var(--journey-result);
+  --color-journey-result-foreground: var(--journey-result-foreground);
+
+  --color-lead-new: var(--lead-new);
+  --color-lead-new-foreground: var(--lead-new-foreground);
+  --color-lead-template: var(--lead-template);
+  --color-lead-template-foreground: var(--lead-template-foreground);
+  --color-lead-contact: var(--lead-contact);
+  --color-lead-contact-foreground: var(--lead-contact-foreground);
+  --color-lead-scheduled: var(--lead-scheduled);
+  --color-lead-scheduled-foreground: var(--lead-scheduled-foreground);
+  --color-lead-no-show: var(--lead-no-show);
+  --color-lead-no-show-foreground: var(--lead-no-show-foreground);
+  --color-lead-rescheduled: var(--lead-rescheduled);
+  --color-lead-rescheduled-foreground: var(--lead-rescheduled-foreground);
+  --color-lead-quoted: var(--lead-quoted);
+  --color-lead-quoted-foreground: var(--lead-quoted-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Accordion (components/ui/accordion.tsx) — altura vem do Radix. */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  @keyframes accordion-down {
+    from { height: 0; }
+    to { height: var(--radix-accordion-content-height); }
+  }
+  @keyframes accordion-up {
+    from { height: var(--radix-accordion-content-height); }
+    to { height: 0; }
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Camadas globais (z-index). Escala única — nunca usar z-[N] solto em
+   overlay. Ordem, do fundo pro topo:
+     shell(60) < sheet(70) < dialog(80) < alert(90) < popover(100)
+   Dialog SEMPRE fica acima de Sheet (dialog aberto de dentro de um
+   sheet de form precisa cobri-lo); alert (useConfirm) acima de ambos;
+   popover/select/combobox/tooltip acima de tudo, porque são portalados
+   e podem abrir de dentro de qualquer um deles. Ver
+   docs/frontend-design-system.md §"Camadas (z-index)".
+   --------------------------------------------------------------------- */
+@utility z-shell {
+  z-index: 60;
+}
+@utility z-sheet {
+  z-index: 70;
+}
+@utility z-dialog {
+  z-index: 80;
+}
+@utility z-alert {
+  z-index: 90;
+}
+@utility z-popover {
+  z-index: 100;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+}
+
+/* Wallpaper das superfícies de conversa (MessageList).
+ * Imagem única `fundo-wpp.jpg` usada em light e dark — o que muda entre
+ * temas é a cor por baixo (`--background-chat`). A imagem aparece com
+ * opacidade reduzida via overlay translúcido da própria cor de fundo:
+ * `color-mix(... 85%, transparent)` deixa ~15% do doodle visível, o
+ * suficiente pra textura sem competir com as bolhas.
+ *
+ * `background-size: 100% 100%, 480px auto` — o gradient (overlay) cobre
+ * o elemento inteiro; a imagem tilea em 480px de largura (sem cap, a
+ * fonte é grande e cobriria a tela sem mostrar repetição). */
+.chat-bg {
+  background-color: var(--chat-background-conversation);
+  background-image:
+    linear-gradient(
+      color-mix(in oklab, var(--chat-background-conversation) 90%, transparent),
+      color-mix(in oklab, var(--chat-background-conversation) 90%, transparent)
+    ),
+    url('/fundo-wpp.jpg');
+  background-repeat: repeat;
+  background-size: 100% 100%, 480px auto;
+}
+
+/* ─── Slider de áudio (player custom em MediaPreview) ─────────────────
+ * Estilizado em currentColor pra adaptar à cor do texto pai — funciona
+ * dentro de bolha outbound (texto chat-bubble-foreground) e inbound
+ * (foreground). Track translúcido, thumb sólido pequeno (10px).
+ * ─────────────────────────────────────────────────────────────────── */
+input[type='range'].audio-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: color-mix(in oklab, currentColor 30%, transparent);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+
+input[type='range'].audio-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  border: none;
+  cursor: pointer;
+}
+
+input[type='range'].audio-range::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  border: none;
+  cursor: pointer;
+}
+
+input[type='range'].audio-range:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Scrollbar global ─────────────────────────────────────────────────
+ * Minimalista: 4px no estado normal, 10px ao hover (no próprio scrollbar
+ * ou nos elementos que rolam). Thumb é uma pill translúcida derivada de
+ * `--muted-foreground` via color-mix — se adapta sozinho ao tema. Track
+ * sempre transparente, sem moldura.
+ *
+ * Compatibilidade:
+ *   - Chrome/Edge/Safari: ::-webkit-scrollbar* (suporte universal há anos)
+ *   - Firefox: scrollbar-width + scrollbar-color (suporte universal)
+ *   - color-mix(in oklab, ...) — Chrome 111+, Firefox 113+, Safari 16.2+
+ *
+ * Pra desabilitar em um container específico, use `.no-scrollbar` (já
+ * coberto pelo plugin Tailwind ou aplique inline) ou sobrescreva via
+ * `[data-scroll="full"]`.
+ * ─────────────────────────────────────────────────────────────────── */
+
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+*::-webkit-scrollbar:hover {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklab, var(--muted-foreground) 30%, transparent);
+  border-radius: 9999px;
+  transition: background-color 150ms ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox — sem hover state nativo; mantém fino + cor consistente. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--muted-foreground) 30%, transparent)
+    transparent;
+}
+
+/* =========================================================
+ * Print de relatórios (window.print() nativo)
+ *
+ * Escopo: páginas de relatório em /reports/:slug. O renderer
+ * envolve o conteúdo em <article data-report-printable> via
+ * <PrintableReport>; o body só revela isso no @media print.
+ *
+ * Tudo fora do printable some: sidebar, mobile top bar, toolbar
+ * da página, popovers, botões de ação. PageContainer (bg-page)
+ * vira fundo branco.
+ *
+ * Seções (<details data-report-section>) são forçadas abertas pra
+ * todos os blocos aparecerem no PDF — comportamento "exportar tudo".
+ * ========================================================= */
+@media print {
+  /* A4 portrait com margens estreitas. Reservamos espaço pro
+   * footer/numeração via @bottom-center caso queira adicionar. */
+  @page {
+    size: A4;
+    margin: 12mm 10mm;
+  }
+
+  html,
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* 1) Esconde tudo por padrão */
+  body * {
+    visibility: hidden;
+  }
+
+  /* 2) Revela só o printable e seus descendentes */
+  [data-report-printable],
+  [data-report-printable] * {
+    visibility: visible;
+  }
+
+  /* 3) Reposiciona o printable pra cobrir a folha inteira (sem
+   *    competir com sidebar/toolbar do app shell) */
+  [data-report-printable] {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    background: white !important;
+  }
+
+  /* 4) Força <details> abertos pra todas as seções aparecerem */
+  [data-report-section] {
+    /* `open` é attr boolean — CSS não controla diretamente, mas
+     * forçamos o conteúdo a aparecer mesmo quando o attr está
+     * ausente, mostrando o `>div` filho. */
+  }
+  [data-report-section] > div {
+    display: block !important;
+  }
+
+  /* 5) Evita quebrar uma seção no meio sempre que possível */
+  [data-report-section] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* 6) Bordas mais sóbrias e sem hover/animação */
+  [data-report-printable] [data-report-section] {
+    border-color: #ddd !important;
+  }
+}
+

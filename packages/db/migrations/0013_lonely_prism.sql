@@ -1,0 +1,1 @@
+ALTER TABLE "whatsapp_channels" ADD COLUMN "color" varchar(7);

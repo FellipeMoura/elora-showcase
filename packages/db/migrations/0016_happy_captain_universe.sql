@@ -1,0 +1,1 @@
+-- No-op. Ressincroniza snapshot após 0015_unify_appointments aplicada manualmente.

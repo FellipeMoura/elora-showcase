@@ -1,0 +1,1 @@
+ALTER TABLE "messages" ADD COLUMN "authored_on_device" boolean DEFAULT false NOT NULL;

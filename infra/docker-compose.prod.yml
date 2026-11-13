@@ -1,0 +1,98 @@
+# Overrides de PRODUCAO. Usar SEMPRE com o base via:
+#
+#   cd /srv/elora/repo/infra
+#   docker compose --env-file ../.env.production -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Diferencas em relacao ao base (dev):
+# - restart: unless-stopped em tudo (sobe sozinho apos reboot/crash)
+# - ports bind em 127.0.0.1: somente apps no host (Nginx, core, chat) acessam
+# - bind mounts em /srv/elora/data (volumes nomeados do base sao ignorados)
+# - mem_limit por servico (somatorio ~2.6GB, deixa folga pros apps Node + Nginx)
+# - logging com rotacao (evita encher disco)
+# - Postgres tuning pra VPS 4GB
+# - env vars vem de ../.env.production (precisa --env-file no comando)
+
+services:
+  postgres:
+    restart: unless-stopped
+    ports:
+      # Binda 0.0.0.0 — UFW bloqueia externo (so 22022, 80, 443 sao liberadas).
+      # Tentamos "127.0.0.1:5432:5432" inicialmente mas Docker no Ubuntu 22.04 +
+      # HostGator dava "address already in use" mesmo com ss -tlnp vazio (bug do
+      # docker-proxy com bind loopback). Defesa em profundidade preservada pela UFW.
+      - "5432:5432"
+    volumes:
+      # Bind mount em /srv/elora/data/postgres (substitui o volume nomeado do base
+      # pq o target /var/lib/postgresql/data e o mesmo — Docker merge usa o ultimo).
+      - /srv/elora/data/postgres:/var/lib/postgresql/data
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c max_connections=50
+      -c work_mem=4MB
+      -c maintenance_work_mem=64MB
+      -c random_page_cost=1.1
+      -c checkpoint_completion_target=0.9
+    mem_limit: 1024m
+    mem_reservation: 512m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  redis:
+    restart: unless-stopped
+    ports:
+      # UFW bloqueia externo (ver nota no postgres).
+      - "6379:6379"
+    volumes:
+      - /srv/elora/data/redis:/data
+    # maxmemory 200mb + noeviction (BullMQ requer noeviction — com LRU jobs
+    # antigos podem ser deletados silenciosamente, perdendo mensagens em fila).
+    # Se Redis enche, BullMQ retorna erro explicito (monitorar e aumentar).
+    # save 60 1000 = snapshot rdb a cada 60s se >=1000 keys mudaram (durabilidade
+    # razoavel — perda max de 60s de dados em crash, OK pra cache + filas).
+    command: redis-server --maxmemory 200mb --maxmemory-policy noeviction --save 60 1000
+    mem_limit: 256m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # MinIO removido de prod desde a Fase 10 — substituido por Cloudflare R2
+  # (S3-compatible, libera ~500MB RAM). Em dev local segue funcionando via
+  # profile 'storage-local' no docker-compose.yml base. As env vars
+  # MINIO_ENDPOINT/PORT/etc no .env.production apontam pro R2 — codigo nao
+  # mudou porque o SDK minio-js eh S3-compatible.
+
+  evolution:
+    restart: unless-stopped
+    ports:
+      # UFW bloqueia externo (ver nota no postgres). Nginx faz proxy pra
+      # evolution.elora.app.br com auth header.
+      - "5503:8080"
+    volumes:
+      - /srv/elora/data/evolution:/evolution/instances
+    environment:
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY}
+      # URL publica HTTPS usada pelo Evolution pra montar links (QR base64, media).
+      # Browser do staff e Cloud API (futuro) consomem.
+      SERVER_URL: ${EVOLUTION_SERVER_URL}
+      # Sobrescreve a URI hardcoded do base (postgresql://elora:elora@...) com
+      # as credenciais reais do .env.production. Senha gerada com openssl
+      # ja remove =+/ pra nao quebrar URL.
+      DATABASE_CONNECTION_URI: postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres:5432/evolution
+    mem_limit: 800m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"

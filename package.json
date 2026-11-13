@@ -1,0 +1,39 @@
+{
+  "name": "elora",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SaaS de gestão para clínicas de estética e depilação a laser, com integração nativa ao WhatsApp",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "lint": "pnpm -r run lint",
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "dev": "pnpm -r --parallel run dev",
+    "infra:up": "docker compose -f infra/docker-compose.yml --profile storage-local up -d",
+    "infra:down": "docker compose -f infra/docker-compose.yml --profile storage-local stop",
+    "infra:reset": "docker compose -f infra/docker-compose.yml --profile storage-local down -v",
+    "infra:logs": "docker compose -f infra/docker-compose.yml --profile storage-local logs -f",
+    "db:generate": "pnpm --filter @elora/db run generate",
+    "db:check": "pnpm --filter @elora/db run check",
+    "db:migrate": "pnpm --filter @elora/db run migrate",
+    "db:migrate:status": "pnpm --filter @elora/db run migrate:status",
+    "db:seed": "pnpm --filter @elora/db run seed",
+    "db:studio": "pnpm --filter @elora/db run studio"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ],
+    "overrides": {
+      "drizzle-orm": "^0.38.0",
+      "react-draggable": "4.5.0"
+    }
+  },
+  "packageManager": "pnpm@11.1.2+sha512.415a1cc25974731e75455c1468371be74c5aa5fb7621b50d4056d222451609f11412f23fd602e6169f1e060466641f798597e1be961a10688836a67b16569499"
+}

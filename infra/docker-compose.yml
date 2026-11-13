@@ -1,0 +1,144 @@
+# `name: elora` fixa o nome do projeto Compose. SEM isto, o Compose usa o nome
+# da pasta ("infra") como projeto — colidindo com o compose do Quartzo (que
+# também mora em infra/) e fazendo os dois projetos montarem o mesmo volume
+# físico do Postgres. Nunca remover.
+name: elora
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: elora_postgres
+    environment:
+      POSTGRES_USER: elora
+      POSTGRES_PASSWORD: elora
+      POSTGRES_DB: elora_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Cria role `elora_app` (no-bypassrls) na primeira inicialização do volume.
+      # Para volume já existente, aplicar manualmente:
+      #   docker exec -i elora_postgres psql -U elora -d elora_dev < infra/postgres-init.sql
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U elora -d elora_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: elora_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # MinIO so sobe quando profile 'storage-local' eh ativado — opt-in pra dev.
+  # Em prod usamos Cloudflare R2 (S3-compatible, libera ~500MB RAM da VPS).
+  # Dev local continua com MinIO pra evitar dependencia de internet/conta R2.
+  #
+  # Subir em dev: ja coberto pelos scripts pnpm infra:up/down/reset/logs.
+  # Subir manual: docker compose --profile storage-local up -d minio
+  minio:
+    image: minio/minio:latest
+    container_name: elora_minio
+    profiles: ["storage-local"]
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: elora
+      MINIO_ROOT_PASSWORD: eloraminio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Evolution API — gateway WhatsApp (Baileys + Meta Cloud). Ver arquitetura.md §7.
+  # Database isolado em `evolution` no mesmo cluster Postgres (criado via
+  # postgres-init.sql). Redis usa DB 1 (BullMQ do Elora usa DB 0 default).
+  # AUTHENTICATION_API_KEY é "master key" pra criar instâncias — Elora chama o
+  # endpoint admin (POST /instance/create) com esse header.
+  evolution:
+    # v2.3.7 (dez/2025) traz Baileys v7.0.0-rc.9 com versão WA Web atualizada.
+    # v2.1.1 (anterior) dava `statusReason: 405` no startup do socket porque a
+    # versão hardcoded do WA Web estava desatualizada. v2.4.x descartado por
+    # exigir licença obrigatória (escopo paga).
+    #
+    # ORG migrou de `atendai` pra `evoapicloud` no meio do ciclo v2 — `atendai`
+    # parou em v2.2.3 (fev/2025); releases novas só em `evoapicloud`. Reavalia
+    # quando socket falhar de novo (costuma acontecer a cada 6-12 meses; WA
+    # muda protocolo).
+    image: evoapicloud/evolution-api:v2.3.7
+    container_name: elora_evolution
+    restart: unless-stopped
+    # host.docker.internal aponta pro host onde apps/chat e MinIO rodam.
+    # Mac/Win com Docker Desktop resolve automaticamente; Linux precisa
+    # do host-gateway explícito. Necessário pra Evolution baixar presigned
+    # URLs do MinIO publicado em MINIO_PUBLIC_ENDPOINT.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:-dev-evolution-master-key-change-me}
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://elora:elora@postgres:5432/evolution
+      DATABASE_CONNECTION_CLIENT_NAME: evolution
+      DATABASE_ENABLED: "true"
+      DATABASE_SAVE_DATA_INSTANCE: "true"
+      DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
+      DATABASE_SAVE_MESSAGE_UPDATE: "true"
+      DATABASE_SAVE_DATA_CONTACTS: "true"
+      DATABASE_SAVE_DATA_CHATS: "true"
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://redis:6379/1
+      CACHE_REDIS_PREFIX_KEY: evolution_v2
+      # URL pública usada pelo Evolution pra montar links (QR base64, media).
+      # Em dev: localhost; em prod: URL real atrás do proxy.
+      SERVER_URL: ${EVOLUTION_SERVER_URL:-http://localhost:5503}
+      # Não deletar instâncias automaticamente — Elora controla lifecycle via
+      # endpoint admin de provisionamento.
+      DEL_INSTANCE: "false"
+    ports:
+      - "5503:8080"
+    volumes:
+      - evolution_instances:/evolution/instances
+    healthcheck:
+      # Evolution responde 200 em / com info da API quando saudável.
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8080/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  # Volumes originalmente criados sob o projeto Compose `infra` (nome default
+  # antes de adicionarmos `name: elora` no topo). Aliasados por `name:` +
+  # `external: true` pra preservar os dados de dev existentes — sem isso o
+  # Compose sob o projeto `elora` criaria volumes novos vazios (`elora_*`) e
+  # o Postgres/Redis/MinIO/Evolution voltariam do zero.
+  postgres_data:
+    name: infra_postgres_data
+    external: true
+  redis_data:
+    name: infra_redis_data
+    external: true
+  minio_data:
+    name: infra_minio_data
+    external: true
+  evolution_instances:
+    name: infra_evolution_instances
+    external: true

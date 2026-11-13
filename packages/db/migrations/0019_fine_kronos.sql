@@ -1,0 +1,9 @@
+-- No-op. Drizzle gerou 0019 com o diff completo de availability +
+-- procedures.color, mas essas mudanças já foram aplicadas via as migrations
+-- manuais 0017_availability.sql + 0018_calendar_colors.sql.
+--
+-- O conteúdo gerado pelo drizzle foi removido pra evitar erro de "type
+-- schedule_exception_kind already exists" durante `pnpm db:migrate`.
+--
+-- O meta/0019_snapshot.json continua válido (reflete o estado real do
+-- schema), portanto próximos `db:generate` partem da base correta.

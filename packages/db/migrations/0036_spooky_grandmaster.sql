@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "journeys_client_active_unique" ON "journeys" USING btree ("client_id") WHERE status = 'active';

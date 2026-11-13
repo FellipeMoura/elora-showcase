@@ -1,0 +1,2 @@
+ALTER TABLE "whatsapp_contacts" ADD COLUMN "active" boolean DEFAULT true NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "wa_contacts_client_active_unique" ON "whatsapp_contacts" USING btree ("client_id") WHERE "whatsapp_contacts"."client_id" IS NOT NULL AND "whatsapp_contacts"."active" = true;
